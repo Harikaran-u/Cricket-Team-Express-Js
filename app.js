@@ -14,10 +14,13 @@ const initializeDbAndServer = async () => {
   try {
     db = await open({
       filename: dbPath,
-      drive: sqlite3.Database,
+      driver: sqlite3.Database,
     });
-    app.listen(3000);
+    app.listen(3000, () => {
+      console.log("server started");
+    });
   } catch (e) {
+    console.log("error");
     process.exit(1);
   }
 };
@@ -26,7 +29,10 @@ initializeDbAndServer();
 
 app.get("/players/", async (request, response) => {
   const getPlayerQuery = `
-        SELECT * FROM
+        SELECT player_id as playerId,
+        player_name as playerName,
+        jersey_number as jerseyNumber,
+        role as role FROM
         cricket_team;`;
 
   const playersDetail = await db.all(getPlayerQuery);
@@ -38,7 +44,7 @@ app.post("/players/", async (request, response) => {
   const { playerName, jerseyNumber, role } = playerDetails;
   const addPlayerQuery = `
     INSERT INTO 
-    cricket_team(playerName, jerseyNumber, role)
+    cricket_team(player_name, jersey_number, role)
     Values
     (
      '${playerName}',
@@ -52,7 +58,10 @@ app.post("/players/", async (request, response) => {
 app.get("/players/:playerId/", async (request, response) => {
   const { playerId } = request.params;
   const onePlayerQuery = `
-    SELECT * 
+    SELECT player_id as playerId,
+    player_name as playerName,
+    jersey_number as jerseyNumber,
+    role as role 
     FROM 
     cricket_team
     WHERE 
@@ -67,14 +76,16 @@ app.put("/players/:playerId/", async (request, response) => {
   const updatePlayerDetail = request.body;
   const { playerName, jerseyNumber, role } = updatePlayerDetail;
 
-  const updatePlayerQuery = `UPDATE 
+  const updatePlayerQuery = `
+  UPDATE 
         cricket_team
     SET
-    playerName='${playerName}',
-    jerseyNumber=${jerseyNumber},
-    role='${role}';`;
+    player_name='${playerName}',
+    jersey_number=${jerseyNumber},
+    role='${role}'
+    WHERE player_id = ${playerId};`;
 
-  await db.run(updatePlayerDetail);
+  await db.run(updatePlayerQuery);
   response.send("Player Details Updated");
 });
 
